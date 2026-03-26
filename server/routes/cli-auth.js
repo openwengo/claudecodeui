@@ -63,6 +63,7 @@ router.get('/codex/status', async (req, res) => {
     res.json({
       authenticated: result.authenticated,
       email: result.email,
+      method: result.method || null,
       error: result.error
     });
 
@@ -115,7 +116,7 @@ async function loadClaudeSettingsEnv() {
 /**
  * Checks Claude authentication credentials using two methods with priority order:
  *
- * Priority 1: ANTHROPIC_API_KEY environment variable
+ * Priority 1: ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN environment variable
  * Priority 1b: ~/.claude/settings.json env values
  * Priority 2: ~/.claude/.credentials.json OAuth tokens
  *
@@ -131,16 +132,25 @@ async function loadClaudeSettingsEnv() {
  * @returns {Promise<Object>} Authentication status with { authenticated, email, method }
  *   - authenticated: boolean indicating if valid credentials exist
  *   - email: user email or auth method identifier
- *   - method: 'api_key' for env var, 'credentials_file' for OAuth tokens
+ *   - method: 'api_key' for env/token env vars, 'credentials_file' for OAuth tokens
  */
 async function checkClaudeCredentials() {
-  // Priority 1: Check for ANTHROPIC_API_KEY environment variable
-  // The SDK checks this first and uses it if present, even if OAuth tokens exist.
-  // When set, API calls are charged via pay-as-you-go rates instead of subscription.
+  // Priority 1: Check for process-level API credentials.
+  // Claude Code can run directly against the API when either credential is
+  // exported into the server/container environment, so the UI should treat both
+  // as already connected and avoid presenting the interactive login flow.
   if (process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim()) {
     return {
       authenticated: true,
       email: 'API Key Auth',
+      method: 'api_key'
+    };
+  }
+
+  if (process.env.ANTHROPIC_AUTH_TOKEN && process.env.ANTHROPIC_AUTH_TOKEN.trim()) {
+    return {
+      authenticated: true,
+      email: 'API Token Auth',
       method: 'api_key'
     };
   }
@@ -295,6 +305,14 @@ function checkCursorStatus() {
 }
 
 async function checkCodexCredentials() {
+  if (process.env.CODEX_API_KEY && process.env.CODEX_API_KEY.trim()) {
+    return {
+      authenticated: true,
+      email: 'API Key Auth',
+      method: 'api_key'
+    };
+  }
+
   try {
     const authPath = path.join(os.homedir(), '.codex', 'auth.json');
     const content = await fs.readFile(authPath, 'utf8');
@@ -324,7 +342,8 @@ async function checkCodexCredentials() {
 
       return {
         authenticated: true,
-        email
+        email,
+        method: 'credentials_file'
       };
     }
 
@@ -332,13 +351,15 @@ async function checkCodexCredentials() {
     if (auth.OPENAI_API_KEY) {
       return {
         authenticated: true,
-        email: 'API Key Auth'
+        email: 'API Key Auth',
+        method: 'api_key'
       };
     }
 
     return {
       authenticated: false,
       email: null,
+      method: null,
       error: 'No valid tokens found'
     };
   } catch (error) {
@@ -346,12 +367,14 @@ async function checkCodexCredentials() {
       return {
         authenticated: false,
         email: null,
+        method: null,
         error: 'Codex not configured'
       };
     }
     return {
       authenticated: false,
       email: null,
+      method: null,
       error: error.message
     };
   }
