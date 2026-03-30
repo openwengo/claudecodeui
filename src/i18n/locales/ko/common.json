@@ -19,7 +19,8 @@
   },
   "tabs": {
     "chat": "채팅",
-    "shell": "Shell",
+    "shell": "에이전트",
+    "terminal": "터미널",
     "files": "파일",
     "git": "소스 관리",
     "tasks": "작업"

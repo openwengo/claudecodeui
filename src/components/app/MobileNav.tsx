@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, type Dispatch, type SetStateAction } from 
 import { useTranslation } from 'react-i18next';
 import {
   MessageSquare,
+  Bot,
   Folder,
   Terminal,
   GitBranch,
@@ -28,7 +29,7 @@ type CoreTabId = Exclude<AppTab, `plugin:${string}` | 'preview'>;
 type CoreNavItem = {
   id: CoreTabId;
   icon: LucideIcon;
-  label: string;
+  labelKey: string;
 };
 
 type MobileNavProps = {
@@ -70,13 +71,14 @@ export default function MobileNav({ activeTab, setActiveTab, isInputFocused }: M
   };
 
   const baseCoreItems: CoreNavItem[] = [
-    { id: 'chat', icon: MessageSquare, label: 'Chat' },
-    { id: 'shell', icon: Terminal, label: 'Shell' },
-    { id: 'files', icon: Folder, label: 'Files' },
-    { id: 'git', icon: GitBranch, label: 'Git' },
+    { id: 'chat', icon: MessageSquare, labelKey: 'tabs.chat' },
+    { id: 'shell', icon: Bot, labelKey: 'tabs.shell' },
+    { id: 'terminal', icon: Terminal, labelKey: 'tabs.terminal' },
+    { id: 'files', icon: Folder, labelKey: 'tabs.files' },
+    { id: 'git', icon: GitBranch, labelKey: 'tabs.git' },
   ];
   const coreItems: CoreNavItem[] = shouldShowTasksTab
-    ? [...baseCoreItems, { id: 'tasks', icon: ClipboardCheck, label: 'Tasks' }]
+    ? [...baseCoreItems, { id: 'tasks', icon: ClipboardCheck, labelKey: 'tabs.tasks' }]
     : baseCoreItems;
 
   return (
@@ -89,6 +91,7 @@ export default function MobileNav({ activeTab, setActiveTab, isInputFocused }: M
           {coreItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            const label = t(item.labelKey);
 
             return (
               <button
@@ -102,7 +105,7 @@ export default function MobileNav({ activeTab, setActiveTab, isInputFocused }: M
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'
                   }`}
-                aria-label={item.label}
+                aria-label={label}
                 aria-current={isActive ? 'page' : undefined}
               >
                 {isActive && (
@@ -113,7 +116,7 @@ export default function MobileNav({ activeTab, setActiveTab, isInputFocused }: M
                   strokeWidth={isActive ? 2.4 : 1.8}
                 />
                 <span className={`relative z-10 text-[10px] font-medium transition-all duration-200 ${isActive ? 'opacity-100' : 'opacity-60'}`}>
-                  {item.label}
+                  {label}
                 </span>
               </button>
             );
