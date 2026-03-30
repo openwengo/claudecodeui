@@ -68,7 +68,7 @@ import pluginsRoutes from './routes/plugins.js';
 import messagesRoutes from './routes/messages.js';
 import { createNormalizedMessage } from './providers/types.js';
 import { startEnabledPluginServers, stopAllPlugins, getPluginPort } from './utils/plugin-process-manager.js';
-import { initializeDatabase, sessionNamesDb, applyCustomSessionNames } from './database/db.js';
+import { initializeDatabase, autoProvisionUser, sessionNamesDb, applyCustomSessionNames } from './database/db.js';
 import { configureWebPush } from './services/vapid-keys.js';
 import { validateApiKey, authenticateToken, authenticateWebSocket } from './middleware/auth.js';
 import { IS_PLATFORM } from './constants/config.js';
@@ -2383,6 +2383,9 @@ async function startServer() {
     try {
         // Initialize authentication database
         await initializeDatabase();
+
+        // Auto-provision user from environment (platform SSO integration)
+        await autoProvisionUser();
 
         // Configure Web Push (VAPID keys)
         configureWebPush();

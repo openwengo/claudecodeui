@@ -229,6 +229,50 @@ const userDb = {
   }
 };
 
+/**
+ * Auto-provision a user from environment variables (platform mode).
+ *
+ * When CCUI_AUTO_USER is set, creates a user if none exists and configures
+ * git identity. This enables seamless SSO integration where the platform
+ * pre-configures the container with the authenticated user's identity.
+ *
+ * Env vars:
+ *   CCUI_AUTO_USER       - Username (typically the user's email)
+ *   CCUI_AUTO_GIT_NAME   - Git user.name (e.g. "Olivier Schiavo")
+ *   CCUI_AUTO_GIT_EMAIL  - Git user.email (e.g. "olivier.schiavo@wengo.com")
+ */
+const autoProvisionUser = async () => {
+  const autoUser = process.env.CCUI_AUTO_USER;
+  if (!autoUser) return;
+
+  if (userDb.hasUsers()) {
+    console.log(`[AUTO-PROVISION] User already exists, skipping auto-provision`);
+    return;
+  }
+
+  try {
+    // bcrypt is imported dynamically to avoid adding a top-level dependency to db.js
+    const bcrypt = await import('bcrypt');
+    // Generate a random password hash — never used in IS_PLATFORM mode but required by the schema
+    const passwordHash = await bcrypt.default.hash(crypto.randomBytes(32).toString('hex'), 12);
+
+    const user = userDb.createUser(autoUser, passwordHash);
+    console.log(`[AUTO-PROVISION] Created user: ${autoUser} (id: ${user.id})`);
+
+    // Configure git identity
+    const gitName = process.env.CCUI_AUTO_GIT_NAME || autoUser.split('@')[0];
+    const gitEmail = process.env.CCUI_AUTO_GIT_EMAIL || autoUser;
+    userDb.updateGitConfig(user.id, gitName, gitEmail);
+    console.log(`[AUTO-PROVISION] Git config: ${gitName} <${gitEmail}>`);
+
+    // Mark onboarding as complete — skip the setup wizard
+    userDb.completeOnboarding(user.id);
+    console.log(`[AUTO-PROVISION] Onboarding marked complete`);
+  } catch (err) {
+    console.error(`[AUTO-PROVISION] Failed:`, err.message);
+  }
+};
+
 // API Keys database operations
 const apiKeysDb = {
   // Generate a new API key
@@ -581,6 +625,7 @@ const githubTokensDb = {
 export {
   db,
   initializeDatabase,
+  autoProvisionUser,
   userDb,
   apiKeysDb,
   credentialsDb,
