@@ -1664,10 +1664,11 @@ function handleShellConnection(ws) {
                 );
 
                 // Include command hash in session key so different commands get separate sessions
+                const modeKey = isPlainShell ? 'plain-shell' : provider;
                 const commandSuffix = isPlainShell && initialCommand
                     ? `_cmd_${Buffer.from(initialCommand).toString('base64').slice(0, 16)}`
                     : '';
-                ptySessionKey = `${projectPath}_${sessionId || 'default'}${commandSuffix}`;
+                ptySessionKey = `${projectPath}_${modeKey}_${sessionId || 'default'}${commandSuffix}`;
 
                 // Kill any existing login session before starting fresh
                 if (isLoginCommand) {
@@ -1751,10 +1752,12 @@ function handleShellConnection(ws) {
                     }
 
                     // Build shell command — use cwd for project path (never interpolate into shell string)
-                    let shellCommand;
+                    let shellCommand = null;
                     if (isPlainShell) {
-                        // Plain shell mode - run the initial command in the project directory
-                        shellCommand = initialCommand;
+                        if (initialCommand) {
+                            // Plain shell mode can run a one-off command in the project directory.
+                            shellCommand = initialCommand;
+                        }
                     } else if (provider === 'cursor') {
                         if (hasSession && sessionId) {
                             shellCommand = `cursor-agent --resume="${sessionId}"`;
@@ -1813,11 +1816,21 @@ function handleShellConnection(ws) {
                         }
                     }
 
-                    console.log('🔧 Executing shell command:', shellCommand);
+                    // Use an interactive login shell for real terminal access and a command shell for agent/one-shot modes.
+                    const shell = shellCommand
+                        ? (os.platform() === 'win32' ? 'powershell.exe' : 'bash')
+                        : (os.platform() === 'win32'
+                            ? 'powershell.exe'
+                            : (process.env.SHELL && process.env.SHELL.trim() ? process.env.SHELL : 'bash'));
+                    const shellArgs = shellCommand
+                        ? (os.platform() === 'win32' ? ['-Command', shellCommand] : ['-c', shellCommand])
+                        : (os.platform() === 'win32' ? ['-NoLogo'] : ['-l']);
 
-                    // Use appropriate shell based on platform
-                    const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
-                    const shellArgs = os.platform() === 'win32' ? ['-Command', shellCommand] : ['-c', shellCommand];
+                    if (shellCommand) {
+                        console.log('🔧 Executing shell command:', shellCommand);
+                    } else {
+                        console.log('🔧 Starting interactive shell:', shell, shellArgs.join(' '));
+                    }
 
                     // Use terminal dimensions from client if provided, otherwise use defaults
                     const termCols = data.cols || 80;
@@ -2386,6 +2399,16 @@ async function startServer() {
 
         // Auto-provision user from environment (platform SSO integration)
         await autoProvisionUser();
+
+        // Auto-create /workspace project in platform mode
+        if (IS_PLATFORM && process.env.WORKSPACES_ROOT) {
+            try {
+                await addProjectManually(process.env.WORKSPACES_ROOT);
+                console.log(`[AUTO-PROVISION] Project created: ${process.env.WORKSPACES_ROOT}`);
+            } catch {
+                // Already exists — that's fine
+            }
+        }
 
         // Configure Web Push (VAPID keys)
         configureWebPush();

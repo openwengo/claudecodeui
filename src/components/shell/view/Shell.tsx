@@ -188,6 +188,7 @@ export default function Shell({
     () => (sessionDisplayName ? sessionDisplayName.slice(0, 50) : null),
     [sessionDisplayName],
   );
+  const isInteractivePlainShell = isPlainShell && !initialCommand;
 
   const handleRestartShell = useCallback(() => {
     setIsRestarting(true);
@@ -227,7 +228,9 @@ export default function Shell({
     );
   }
 
-  const readyDescription = isPlainShell
+  const readyDescription = isInteractivePlainShell
+    ? t('shell.startTerminal', { projectName: selectedProject.displayName })
+    : isPlainShell
     ? t('shell.runCommand', {
         command: initialCommand || t('shell.defaultCommand'),
         projectName: selectedProject.displayName,
@@ -236,7 +239,9 @@ export default function Shell({
       ? t('shell.resumeSession', { displayName: sessionDisplayNameLong })
       : t('shell.startSession');
 
-  const connectingDescription = isPlainShell
+  const connectingDescription = isInteractivePlainShell
+    ? t('shell.connectingTerminal', { projectName: selectedProject.displayName })
+    : isPlainShell
     ? t('shell.runCommand', {
         command: initialCommand || t('shell.defaultCommand'),
         projectName: selectedProject.displayName,
@@ -256,13 +261,13 @@ export default function Shell({
         sessionDisplayNameShort={sessionDisplayNameShort}
         onDisconnect={disconnectFromShell}
         onRestart={handleRestartShell}
-        statusNewSessionText={t('shell.status.newSession')}
+        statusNewSessionText={isInteractivePlainShell ? t('shell.status.terminal') : t('shell.status.newSession')}
         statusInitializingText={t('shell.status.initializing')}
         statusRestartingText={t('shell.status.restarting')}
         disconnectLabel={t('shell.actions.disconnect')}
-        disconnectTitle={t('shell.actions.disconnectTitle')}
+        disconnectTitle={isInteractivePlainShell ? t('shell.actions.disconnectTerminalTitle') : t('shell.actions.disconnectTitle')}
         restartLabel={t('shell.actions.restart')}
-        restartTitle={t('shell.actions.restartTitle')}
+        restartTitle={isInteractivePlainShell ? t('shell.actions.restartTerminalTitle') : t('shell.actions.restartTitle')}
         disableRestart={isRestarting || isConnected}
       />
 
@@ -277,10 +282,10 @@ export default function Shell({
           <ShellConnectionOverlay
             mode={overlayMode}
             description={overlayDescription}
-            loadingLabel={t('shell.loading')}
-            connectLabel={t('shell.actions.connect')}
-            connectTitle={t('shell.actions.connectTitle')}
-            connectingLabel={t('shell.connecting')}
+            loadingLabel={isInteractivePlainShell ? t('shell.loadingTerminal') : t('shell.loading')}
+            connectLabel={isInteractivePlainShell ? t('shell.actions.connectTerminal') : t('shell.actions.connect')}
+            connectTitle={isInteractivePlainShell ? t('shell.actions.connectTerminalTitle') : t('shell.actions.connectTitle')}
+            connectingLabel={isInteractivePlainShell ? t('shell.connectingTerminalLabel') : t('shell.connecting')}
             onConnect={connectToShell}
           />
         )}

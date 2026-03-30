@@ -155,6 +155,17 @@ function MainContent({
             </div>
           )}
 
+          {activeTab === 'terminal' && (
+            <div className="h-full w-full overflow-hidden">
+              <StandaloneShell
+                project={selectedProject}
+                isPlainShell
+                showHeader={false}
+                isActive={activeTab === 'terminal'}
+              />
+            </div>
+          )}
+
           {activeTab === 'git' && (
             <div className="h-full overflow-hidden">
               <GitPanel selectedProject={selectedProject} isMobile={isMobile} onFileOpen={handleFileOpen} />

@@ -217,22 +217,31 @@
     },
     "status": {
       "newSession": "New Session",
+      "terminal": "Interactive Terminal",
       "initializing": "Initializing...",
       "restarting": "Restarting..."
     },
     "actions": {
       "disconnect": "Disconnect",
       "disconnectTitle": "Disconnect from shell",
+      "disconnectTerminalTitle": "Disconnect terminal",
       "restart": "Restart",
       "restartTitle": "Restart Shell (disconnect first)",
+      "restartTerminalTitle": "Restart terminal (disconnect first)",
       "connect": "Continue in Shell",
-      "connectTitle": "Connect to shell"
+      "connectTitle": "Connect to shell",
+      "connectTerminal": "Open Terminal",
+      "connectTerminalTitle": "Connect to terminal"
     },
     "loading": "Loading terminal...",
+    "loadingTerminal": "Loading terminal...",
     "connecting": "Connecting to shell...",
+    "connectingTerminalLabel": "Connecting to terminal...",
     "startSession": "Start a new Claude session",
     "resumeSession": "Resume session: {{displayName}}...",
+    "startTerminal": "Open a terminal in {{projectName}}",
     "runCommand": "Run {{command}} in {{projectName}}",
+    "connectingTerminal": "Starting terminal in {{projectName}}",
     "startCli": "Starting Claude CLI in {{projectName}}",
     "defaultCommand": "command"
   },
